@@ -29,13 +29,11 @@
             </intent-filter>
         </activity>
 
-        <!--
         <activity
             android:name=".MainActivity"
-            android:exported="false"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.ShoppinGo" />
-        -->
+            android:theme="@style/Theme.AppCompat.DayNight"
+            android:exported="true"
+            android:label="@string/app_name"/>
 
     </application>
 </manifest>
