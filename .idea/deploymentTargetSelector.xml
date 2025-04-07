@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-04-07T16:28:23.778766131Z">
+        <DropdownSelection timestamp="2025-04-07T18:47:37.417065893Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=420006d1eee1c383" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=/home/goksu/.android/avd/J5_AVD.avd" />
             </handle>
           </Target>
         </DropdownSelection>
