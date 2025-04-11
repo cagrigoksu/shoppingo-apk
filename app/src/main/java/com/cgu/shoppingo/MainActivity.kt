@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
@@ -24,9 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
-
 import com.cgu.shoppingo.ui.theme.ShoppinGoTheme
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
@@ -46,6 +47,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
+    val cartViewModel: CartViewModel = viewModel()
 
     val items = listOf(
         BottomNavItem("Home", Icons.Default.Home, "home"),
@@ -55,7 +57,6 @@ fun MainScreen() {
 
     var selectedIndex by remember { mutableIntStateOf(0) }
 
-    // Sync navigation with bottom bar selection
     LaunchedEffect(selectedIndex) {
         navController.navigate(items[selectedIndex].route) {
             popUpTo(navController.graph.startDestinationId) { saveState = true }
@@ -87,9 +88,9 @@ fun MainScreen() {
                 startDestination = "home"
             ) {
                 composable("home") { HomeScreen() }
-                composable("shop") { ShopScreen(navController) }
+                composable("shop") { ShopScreen(navController, cartViewModel) }
                 composable("profile") { ProfileScreen() }
-                composable("scan") { ScanScreen(navController) }
+                composable("scan") { ScanScreen(navController, cartViewModel) }
             }
         }
     }
@@ -107,27 +108,29 @@ fun HomeScreen() {
 }
 
 @Composable
-fun ShopScreen(navController: NavHostController) {
-    Box(
+fun ShopScreen(navController: NavHostController, viewModel: CartViewModel) {
+    val items by viewModel.items.collectAsState()
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 80.dp)
-        ) {
-            Text("🛒 Your Cart")
-            // Future: show scanned items list here
+        Text("🛒 Your Cart")
+
+        Spacer(Modifier.height(8.dp))
+
+        items.forEach {
+            Text("${it.barcode} | Qty: ${it.quantity} | Total: %.2f".format(it.price * it.quantity))
         }
+
+        Spacer(modifier = Modifier.weight(1f))
 
         Button(
             onClick = { navController.navigate("scan") },
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp)
                 .fillMaxWidth()
+                .padding(top = 16.dp)
         ) {
             Text("Scan Item")
         }
@@ -140,22 +143,20 @@ fun ProfileScreen() {
 }
 
 @Composable
-fun ScanScreen(navController: NavHostController) {
+fun ScanScreen(navController: NavHostController, viewModel: CartViewModel) {
     var scannedCode by remember { mutableStateOf<String?>(null) }
     var price by remember { mutableStateOf("") }
     var quantity by remember { mutableIntStateOf(1) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Camera View
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f) // Half the screen
+                .weight(1f)
         ) {
             CameraPreview { code -> scannedCode = code }
         }
 
-        // Input Section
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -189,7 +190,9 @@ fun ScanScreen(navController: NavHostController) {
 
                 Button(
                     onClick = {
-                        // TODO: Save item to ViewModel or state
+                        scannedCode?.let {
+                            viewModel.addItem(it, price.toDoubleOrNull() ?: 0.0, quantity)
+                        }
                         navController.popBackStack()
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -212,6 +215,7 @@ fun ScanScreen(navController: NavHostController) {
     }
 }
 
+
 @OptIn(ExperimentalGetImage::class)
 @Composable
 fun CameraPreview(onBarcodeScanned: (String) -> Unit) {
@@ -227,7 +231,6 @@ fun CameraPreview(onBarcodeScanned: (String) -> Unit) {
         )
     }
 
-    // Request permission if not granted
     LaunchedEffect(Unit) {
         if (!hasPermission && context is ComponentActivity) {
             androidx.core.app.ActivityCompat.requestPermissions(
@@ -310,4 +313,3 @@ fun CameraPreview(onBarcodeScanned: (String) -> Unit) {
         }
     )
 }
-
